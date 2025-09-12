@@ -24,10 +24,19 @@ public class NLPService : INLPService
         _temperature = temperature;
 
         // Only initialize Bedrock client if credentials are provided
+        Console.WriteLine("=== AWS BEDROCK CONNECTION TEST ===");
+        
         if (!string.IsNullOrEmpty(accessKey) && !string.IsNullOrEmpty(secretKey))
         {
+            Console.WriteLine("🔑 AWS Credentials: ✅ Found");
+            Console.WriteLine($"📋 Access Key: {accessKey?.Substring(0, Math.Min(8, accessKey.Length))}...");
+            Console.WriteLine($"🔐 Secret Key: {(string.IsNullOrEmpty(secretKey) ? "❌ Missing" : "✅ Configured")}");
+            Console.WriteLine($"🌍 Region: {region}");
+            Console.WriteLine($"🤖 Model: {modelId}");
+            
             try
             {
+                Console.WriteLine("🔧 Initializing AWS Bedrock client...");
                 var config = new AmazonBedrockRuntimeConfig
                 {
                     RegionEndpoint = RegionEndpoint.GetBySystemName(region)
@@ -35,22 +44,38 @@ public class NLPService : INLPService
 
                 _bedrockClient = new AmazonBedrockRuntimeClient(accessKey, secretKey, config);
                 _useBedrockFallback = false;
+                
+                Console.WriteLine("✅ AWS BEDROCK CLIENT INITIALIZED SUCCESSFULLY!");
+                Console.WriteLine($"🎯 Max Tokens: {maxTokens}");
+                Console.WriteLine($"🌡️ Temperature: {temperature}");
+                Console.WriteLine("🚀 Ready to use AI-powered insights and questions!");
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine("❌ BEDROCK CONNECTION FAILED!");
+                Console.WriteLine($"❌ Error: {ex.Message}");
+                Console.WriteLine("🔄 Falling back to pattern-based extraction");
                 _useBedrockFallback = true;
             }
         }
         else
         {
+            Console.WriteLine("❌ AWS CREDENTIALS NOT PROVIDED!");
+            Console.WriteLine("📝 Access Key: " + (string.IsNullOrEmpty(accessKey) ? "❌ Missing" : "✅ Found"));
+            Console.WriteLine("🔐 Secret Key: " + (string.IsNullOrEmpty(secretKey) ? "❌ Missing" : "✅ Found"));
+            Console.WriteLine("🔄 Using pattern-based fallback mode only");
             _useBedrockFallback = true;
         }
+        
+        Console.WriteLine($"🎛️ Final Mode: {(_useBedrockFallback ? "❌ FALLBACK MODE" : "✅ BEDROCK AI MODE")}");
+        Console.WriteLine("=======================================");
     }
 
     public async Task<List<ActionItem>> ExtractActionItemsAsync(string text, int meetingId)
     {
         if (!_useBedrockFallback && _bedrockClient != null)
         {
+            Console.WriteLine("🤖 Using AWS Bedrock AI for action item extraction...");
             try
             {
                 var prompt = $@"Human: Analyze the following meeting transcript and extract action items. 
@@ -103,6 +128,7 @@ Assistant: I'll analyze the transcript and extract action items.
         }
 
         // Fallback to pattern-based extraction
+        Console.WriteLine("🔄 Using fallback pattern-based extraction for action items");
         return await FallbackExtractActionItemsAsync(text, meetingId);
     }
 
@@ -258,14 +284,17 @@ Generate helpful, relevant questions that would improve the meeting discussion.
 
 Return only the JSON array, no other text.
 
-Assistant: I'll analyze the transcript and suggest relevant questions.
+Assistant: I'll analyze the transcript and suggest relevant questions.";
 
-[]";
-
+                Console.WriteLine($"🧠 Sending question extraction prompt to Bedrock...");
                 var response = await InvokeBedrockModelAsync(prompt);
+                Console.WriteLine($"🤖 Bedrock response: {response}");
+                
                 var jsonResponse = ExtractJsonFromResponse(response);
+                Console.WriteLine($"📝 Extracted JSON: {jsonResponse}");
 
                 var questionsData = JsonSerializer.Deserialize<List<QuestionData>>(jsonResponse);
+                Console.WriteLine($"✅ Deserialized {questionsData?.Count ?? 0} questions");
                 
                 return questionsData?.Select(item => new Question
                 {
@@ -560,19 +589,28 @@ Assistant: ";
 
     private async Task<List<Question>> FallbackExtractQuestionsAsync(string text, int meetingId)
     {
+        Console.WriteLine("🔄 Using fallback question generation...");
         var questions = new List<Question>();
         
-        // Pattern-based question generation based on content analysis
+        // Enhanced pattern-based question generation
         var concernPatterns = new[]
         {
-            @"(?i)(problem|issue|concern|risk|challenge|difficulty)",
-            @"(?i)(unclear|confusing|ambiguous|uncertain)"
+            @"(?i)(problem|issue|concern|risk|challenge|difficulty|obstacle|blocker)",
+            @"(?i)(unclear|confusing|ambiguous|uncertain|vague|complicated)",
+            @"(?i)(budget|cost|resource|timeline|deadline|delay)"
         };
 
         var clarificationNeeded = new[]
         {
-            @"(?i)(maybe|perhaps|possibly|might|could be|not sure)",
-            @"(?i)(need to check|verify|confirm|validate)"
+            @"(?i)(maybe|perhaps|possibly|might|could be|not sure|think|assume)",
+            @"(?i)(need to check|verify|confirm|validate|investigate|research)",
+            @"(?i)(what if|how about|should we|do we need|can we|will we)"
+        };
+
+        var actionPatterns = new[]
+        {
+            @"(?i)(need to|should|must|have to|will|going to|plan to)",
+            @"(?i)(assign|delegate|responsible|owner|who will|task)"
         };
 
         // Generate concern-based questions
@@ -623,7 +661,85 @@ Assistant: ";
             }
         }
 
-        return questions.Take(5).ToList(); // Limit to avoid spam
+        // Add smart contextual questions based on content analysis
+        var words = text.ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var wordCount = words.Length;
+
+        if (wordCount > 20) // Only for substantial content
+        {
+            // Add relevant contextual questions
+            if (text.Contains("project", StringComparison.OrdinalIgnoreCase))
+            {
+                questions.Add(new Question
+                {
+                    MeetingId = meetingId,
+                    QuestionText = "What are the key milestones and deliverables for this project?",
+                    Context = "Project discussion detected",
+                    Type = QuestionType.Timeline,
+                    Priority = QuestionPriority.High,
+                    Confidence = 0.8,
+                    IsAnswered = false,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            if (text.Contains("decision", StringComparison.OrdinalIgnoreCase) || 
+                text.Contains("decide", StringComparison.OrdinalIgnoreCase))
+            {
+                questions.Add(new Question
+                {
+                    MeetingId = meetingId,
+                    QuestionText = "Who has the authority to make this decision and by when?",
+                    Context = "Decision-making discussion detected",
+                    Type = QuestionType.Process,
+                    Priority = QuestionPriority.High,
+                    Confidence = 0.8,
+                    IsAnswered = false,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            if (text.Contains("team", StringComparison.OrdinalIgnoreCase) || 
+                text.Contains("resource", StringComparison.OrdinalIgnoreCase))
+            {
+                questions.Add(new Question
+                {
+                    MeetingId = meetingId,
+                    QuestionText = "Do we have the right resources and team members for this initiative?",
+                    Context = "Resource/team discussion detected",
+                    Type = QuestionType.Resource,
+                    Priority = QuestionPriority.Medium,
+                    Confidence = 0.7,
+                    IsAnswered = false,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            if (text.Contains("technical", StringComparison.OrdinalIgnoreCase) || 
+                text.Contains("system", StringComparison.OrdinalIgnoreCase) ||
+                text.Contains("development", StringComparison.OrdinalIgnoreCase))
+            {
+                questions.Add(new Question
+                {
+                    MeetingId = meetingId,
+                    QuestionText = "Are there any technical dependencies or risks we should consider?",
+                    Context = "Technical discussion detected",
+                    Type = QuestionType.Technical,
+                    Priority = QuestionPriority.Medium,
+                    Confidence = 0.7,
+                    IsAnswered = false,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+        }
+
+        Console.WriteLine($"🎯 Generated {questions.Count} fallback questions");
+        
+        // Limit to avoid too many questions and prioritize by relevance
+        return questions.OrderByDescending(q => q.Confidence)
+                      .ThenByDescending(q => q.Priority)
+                      .Take(8)
+                      .ToList();
     }
 
     private string FallbackSummarizeTranscript(List<TranscriptSegment> segments)

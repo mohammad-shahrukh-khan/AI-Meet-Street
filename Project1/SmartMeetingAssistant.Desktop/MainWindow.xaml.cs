@@ -29,7 +29,9 @@ public partial class MainWindow : Window
         
             // Initialize services with configuration
             _audioService = new AudioService();
-            _transcriptionService = new SimpleSpeechService(); // Real speech recognition with local server
+            Console.WriteLine("🚀 Creating WhisperTranscriptionService...");
+            _transcriptionService = new WhisperTranscriptionService(); // OpenAI Whisper local transcription
+            Console.WriteLine("✅ WhisperTranscriptionService created successfully");
         _nlpService = new NLPService(
             _appSettings.AWS.AccessKey,
             _appSettings.AWS.SecretKey,
@@ -37,6 +39,9 @@ public partial class MainWindow : Window
             _appSettings.AWS.Bedrock.ModelId,
             _appSettings.AWS.Bedrock.MaxTokens,
             _appSettings.AWS.Bedrock.Temperature);
+        
+        // Test Bedrock connection on startup
+        _ = TestBedrockConnectionAsync();
         _meetingContext = new MeetingContext(_appSettings.Database.ConnectionString);
         
         // Subscribe to events
@@ -80,8 +85,11 @@ public partial class MainWindow : Window
             _currentMeeting.Id = meetingId;
 
             // Start services
+            Console.WriteLine("🎵 Starting audio service...");
             await _audioService.StartRecordingAsync();
+            Console.WriteLine("🎤 Starting transcription service...");
             await _transcriptionService.StartTranscriptionAsync();
+            Console.WriteLine("✅ All services started");
 
             // Update UI
             StartMeetingButton.IsEnabled = false;
@@ -178,10 +186,14 @@ public partial class MainWindow : Window
 
     private void OnTranscriptionReceived(object? sender, TranscriptionEventArgs e)
     {
+        Console.WriteLine($"🎤 TRANSCRIPTION RECEIVED: '{e.Segment.Text}' (Final: {e.IsFinal}, Confidence: {e.Confidence})");
+        
         Dispatcher.Invoke(() =>
         {
             if (e.IsFinal && !string.IsNullOrWhiteSpace(e.Segment.Text))
             {
+                Console.WriteLine($"📝 Adding to transcript: '{e.Segment.Text}'");
+                
                 // Add to transcript
                 _currentTranscript.Add(e.Segment);
                 
@@ -194,6 +206,10 @@ public partial class MainWindow : Window
                 
                 // Process with NLP for real-time insights
                 _ = ProcessTranscriptForInsightsAsync(e.Segment.Text);
+            }
+            else
+            {
+                Console.WriteLine($"⚠️ Skipping transcription: IsFinal={e.IsFinal}, IsEmpty={string.IsNullOrWhiteSpace(e.Segment.Text)}");
             }
         });
     }
@@ -217,7 +233,9 @@ public partial class MainWindow : Window
             var actionItems = await _nlpService.ExtractActionItemsAsync(text, _currentMeeting.Id);
             var keyPoints = await _nlpService.ExtractKeyPointsAsync(text, _currentMeeting.Id);
             var decisions = await _nlpService.ExtractDecisionsAsync(text, _currentMeeting.Id);
+            Console.WriteLine("🤔 Extracting questions from text...");
             var questions = await _nlpService.ExtractQuestionsAsync(text, _currentMeeting.Id);
+            Console.WriteLine($"💡 Generated {questions.Count} questions");
 
             // Update UI on the main thread
             Dispatcher.Invoke(() =>
@@ -239,6 +257,7 @@ public partial class MainWindow : Window
 
                 foreach (var question in questions)
                 {
+                    Console.WriteLine($"❓ Adding question: '{question.QuestionText}' (Type: {question.Type}, Priority: {question.Priority})");
                     AddQuestionToUI(question.QuestionText, question.Type.ToString(), question.Priority.ToString());
                 }
             });
@@ -422,6 +441,64 @@ public partial class MainWindow : Window
             
             // Return default settings if configuration fails
             return new AppSettings();
+        }
+    }
+
+    private async Task TestBedrockConnectionAsync()
+    {
+        try
+        {
+            Console.WriteLine();
+            Console.WriteLine("=== BEDROCK FUNCTIONALITY TEST ===");
+            Console.WriteLine("🔍 Testing if Bedrock AI features work...");
+            
+            // Simple test - try to extract action items from a test string
+            var testText = "We need to complete the project documentation by Friday and assign John to review the requirements.";
+            Console.WriteLine($"📝 Test Input: \"{testText}\"");
+            
+            var actionItems = await _nlpService.ExtractActionItemsAsync(testText, 0);
+            
+            if (actionItems.Count > 0)
+            {
+                Console.WriteLine("🎉 BEDROCK AI FEATURES WORKING PERFECTLY!");
+                Console.WriteLine($"✅ Successfully generated {actionItems.Count} action items:");
+                foreach (var item in actionItems)
+                {
+                    Console.WriteLine($"   📋 {item.Description} (Priority: {item.Priority})");
+                }
+                
+                Dispatcher.Invoke(() =>
+                {
+                    FooterStatus.Text = "AWS Bedrock: ✅ Connected & Working";
+                });
+            }
+            else
+            {
+                Console.WriteLine("⚠️ NO AI FEATURES DETECTED - Using basic pattern matching");
+                Console.WriteLine("🔄 This means you'll get simpler insights and questions");
+                
+                Dispatcher.Invoke(() =>
+                {
+                    FooterStatus.Text = "AWS Bedrock: ⚠️ Fallback Mode";
+                });
+            }
+            
+            Console.WriteLine("===================================");
+            Console.WriteLine();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("❌ BEDROCK TEST COMPLETELY FAILED!");
+            Console.WriteLine($"❌ Error Details: {ex.Message}");
+            Console.WriteLine("🔄 Application will use basic pattern matching only");
+            
+            Dispatcher.Invoke(() =>
+            {
+                FooterStatus.Text = "AWS Bedrock: ❌ Connection Failed";
+            });
+            
+            Console.WriteLine("===================================");
+            Console.WriteLine();
         }
     }
 
