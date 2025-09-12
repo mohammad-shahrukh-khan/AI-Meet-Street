@@ -1,0 +1,13 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/Project1/.vs/SmartMeetingAssistant
+/Project1/SmartMeetingAssistant.Core/bin/Debug/net9.0
+/Project1/SmartMeetingAssistant.Core/obj
+/Project1/SmartMeetingAssistant.Desktop/bin/Debug/net9.0-windows/runtimes
+/Project1/SmartMeetingAssistant.Desktop/bin/Debug/net9.0-windows
+/Project1/SmartMeetingAssistant.Desktop/obj
+/Project1/SmartMeetingAssistant.Services/bin/Debug/net9.0
+/Project1/SmartMeetingAssistant.Services/obj
+/Project1/.vs/ProjectEvaluation
