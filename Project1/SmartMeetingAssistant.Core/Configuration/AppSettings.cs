@@ -13,7 +13,6 @@ public class AWSSettings
     public string SecretKey { get; set; } = string.Empty;
     public string Region { get; set; } = "us-east-1";
     public BedrockSettings Bedrock { get; set; } = new();
-    public TranscribeSettings Transcribe { get; set; } = new();
 }
 
 public class BedrockSettings
@@ -23,12 +22,6 @@ public class BedrockSettings
     public double Temperature { get; set; } = 0.7;
 }
 
-public class TranscribeSettings
-{
-    public string LanguageCode { get; set; } = "en-US";
-    public int MediaSampleRateHertz { get; set; } = 16000;
-    public string MediaFormat { get; set; } = "wav";
-}
 
 public class AudioSettings
 {
