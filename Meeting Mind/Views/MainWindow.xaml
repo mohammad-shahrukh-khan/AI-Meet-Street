@@ -6,7 +6,7 @@
     xmlns:local="clr-namespace:MeetingMind.Converters"
         xmlns:vm="clr-namespace:MeetingMind.ViewModels"
         mc:Ignorable="d"
-        Title="MeetingMind" Height="600" Width="900">
+        Title="MeetingMind" Height="700" Width="1200">
     <Window.DataContext>
         <vm:MainViewModel/>
     </Window.DataContext>
@@ -19,12 +19,17 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
+        
+        <!-- Top Control Panel -->
         <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="10">
             <Button Content="Test UI" Command="{Binding TestCommand}" Margin="0,0,10,0" Background="LightBlue"/>
+            <Button Content="Test Chunk" Command="{Binding TestChunkCommand}" Margin="0,0,10,0" Background="LightGreen"/>
             <Button Content="Start Recording" Command="{Binding StartRecordingCommand}" Margin="0,0,10,0"/>
             <Button Content="Stop Recording" Command="{Binding StopRecordingCommand}" Margin="0,0,10,0"/>
             <ProgressBar Width="150" Height="20" IsIndeterminate="True" Visibility="{Binding IsProcessing, Converter={StaticResource BooleanToVisibilityConverter}}"/>
         </StackPanel>
+        
+        <!-- Main Content Area -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="2*"/>
@@ -33,72 +38,108 @@
             
             <!-- Left Panel: Live Transcript -->
             <StackPanel Grid.Column="0" Margin="10">
-                <TextBlock Text="Live Transcript" FontWeight="Bold" FontSize="16" Margin="0,0,0,10" Foreground="#2c3e50"/>
-                <ScrollViewer Height="400" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-                    <TextBox Text="{Binding LiveTranscript}" AcceptsReturn="True" 
-                             TextWrapping="Wrap" IsReadOnly="True" 
-                             Background="#f8f9fa" BorderBrush="#dee2e6" 
-                             Padding="10" FontFamily="Segoe UI" FontSize="12"/>
-                </ScrollViewer>
+                <TextBlock Text="Live Transcript" FontWeight="Bold" FontSize="14"/>
+                <TextBox Text="{Binding LiveTranscript}" AcceptsReturn="True" Height="500" 
+                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                         TextWrapping="Wrap"/>
             </StackPanel>
             
-            <!-- Right Panel: AI Summary with Sections -->
-            <ScrollViewer Grid.Column="1" Margin="10" VerticalScrollBarVisibility="Auto">
-                <StackPanel>
-                    <TextBlock Text="AI Summary" FontWeight="Bold" FontSize="16" Margin="0,0,0,15" Foreground="#2c3e50"/>
-                    
-                    <!-- Main Summary Section -->
-                    <Border Background="#e8f4fd" BorderBrush="#bee5eb" BorderThickness="1" CornerRadius="5" Margin="0,0,0,10" Padding="10">
-                        <StackPanel>
-                            <TextBlock Text="📋 Summary" FontWeight="Bold" FontSize="14" Foreground="#0c5460" Margin="0,0,0,5"/>
-                            <TextBox Text="{Binding MainSummary}" AcceptsReturn="True" TextWrapping="Wrap" 
-                                     IsReadOnly="True" Background="Transparent" BorderThickness="0" 
-                                     FontFamily="Segoe UI" FontSize="12" MinHeight="60"/>
-                        </StackPanel>
-                    </Border>
-                    
-                    <!-- Key Decisions Section -->
-                    <Border Background="#fff3cd" BorderBrush="#ffeaa7" BorderThickness="1" CornerRadius="5" Margin="0,0,0,10" Padding="10">
-                        <StackPanel>
-                            <TextBlock Text="🎯 Key Decisions" FontWeight="Bold" FontSize="14" Foreground="#856404" Margin="0,0,0,5"/>
-                            <TextBox Text="{Binding KeyDecisions}" AcceptsReturn="True" TextWrapping="Wrap" 
-                                     IsReadOnly="True" Background="Transparent" BorderThickness="0" 
-                                     FontFamily="Segoe UI" FontSize="12" MinHeight="60"/>
-                        </StackPanel>
-                    </Border>
-                    
-                    <!-- Action Items Section -->
-                    <Border Background="#d1ecf1" BorderBrush="#bee5eb" BorderThickness="1" CornerRadius="5" Margin="0,0,0,10" Padding="10">
-                        <StackPanel>
-                            <TextBlock Text="✅ Action Items" FontWeight="Bold" FontSize="14" Foreground="#0c5460" Margin="0,0,0,5"/>
-                            <TextBox Text="{Binding ActionItems}" AcceptsReturn="True" TextWrapping="Wrap" 
-                                     IsReadOnly="True" Background="Transparent" BorderThickness="0" 
-                                     FontFamily="Segoe UI" FontSize="12" MinHeight="60"/>
-                        </StackPanel>
-                    </Border>
-                    
-                    <!-- Follow-ups Section -->
-                    <Border Background="#f8d7da" BorderBrush="#f5c6cb" BorderThickness="1" CornerRadius="5" Margin="0,0,0,10" Padding="10">
-                        <StackPanel>
-                            <TextBlock Text="📅 Follow-ups" FontWeight="Bold" FontSize="14" Foreground="#721c24" Margin="0,0,0,5"/>
-                            <TextBox Text="{Binding FollowUps}" AcceptsReturn="True" TextWrapping="Wrap" 
-                                     IsReadOnly="True" Background="Transparent" BorderThickness="0" 
-                                     FontFamily="Segoe UI" FontSize="12" MinHeight="60"/>
-                        </StackPanel>
-                    </Border>
-                    
-                    <!-- Raw Summary (for debugging) -->
-                    <Border Background="#f8f9fa" BorderBrush="#dee2e6" BorderThickness="1" CornerRadius="5" Margin="0,0,0,10" Padding="10">
-                        <StackPanel>
-                            <TextBlock Text="🔍 Raw Summary" FontWeight="Bold" FontSize="14" Foreground="#6c757d" Margin="0,0,0,5"/>
-                            <TextBox Text="{Binding SummaryText}" AcceptsReturn="True" TextWrapping="Wrap" 
-                                     IsReadOnly="True" Background="Transparent" BorderThickness="0" 
-                                     FontFamily="Segoe UI" FontSize="11" MinHeight="80" MaxHeight="120"/>
-                        </StackPanel>
-                    </Border>
+            <!-- Right Panel: Tabbed Interface -->
+            <StackPanel Grid.Column="1" Margin="10">
+                <!-- Tab Headers -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <Button Content="Summary" Name="SummaryTab" Click="TabButton_Click" 
+                            Background="#E3F2FD" BorderBrush="#2196F3" BorderThickness="1" 
+                            Margin="0,0,5,0" Padding="10,5"/>
+                    <Button Content="Action Items" Name="ActionItemsTab" Click="TabButton_Click" 
+                            Background="LightGray" BorderBrush="Gray" BorderThickness="1" 
+                            Margin="0,0,5,0" Padding="10,5"/>
+                    <Button Content="Follow-ups" Name="FollowUpsTab" Click="TabButton_Click" 
+                            Background="LightGray" BorderBrush="Gray" BorderThickness="1" 
+                            Margin="0,0,5,0" Padding="10,5"/>
+                    <Button Content="Questions" Name="QuestionsTab" Click="TabButton_Click" 
+                            Background="LightGray" BorderBrush="Gray" BorderThickness="1" 
+                            Margin="0,0,5,0" Padding="10,5"/>
+                    <Button Content="Raw Summary" Name="RawSummaryTab" Click="TabButton_Click" 
+                            Background="LightGray" BorderBrush="Gray" BorderThickness="1" 
+                            Padding="10,5"/>
                 </StackPanel>
-            </ScrollViewer>
+                
+                <!-- Tab Content -->
+                <Grid Height="400">
+                    <!-- Summary Tab Content -->
+                    <ScrollViewer Name="SummaryContent" Visibility="Visible" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Text="AI Summary" FontWeight="Bold" FontSize="14" Margin="0,0,0,10"/>
+                            <TextBox Text="{Binding SummaryText}" AcceptsReturn="True" Height="150" 
+                                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                                     TextWrapping="Wrap" Margin="0,0,0,20"/>
+                            
+                            <!-- Live AI Suggestions Section -->
+                            <TextBlock Text="Live AI Suggestions" FontWeight="Bold" FontSize="14" Margin="0,0,0,5"/>
+                            
+                            <!-- Suggested Questions -->
+                            <Border Background="#E3F2FD" BorderBrush="#2196F3" BorderThickness="1" CornerRadius="5" Margin="0,0,0,10">
+                                <StackPanel Margin="10">
+                                    <TextBlock Text="💡 Suggested Questions" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                                    <TextBlock Text="{Binding SuggestedQuestions}" TextWrapping="Wrap" FontSize="11"/>
+                                </StackPanel>
+                            </Border>
+                            
+                            <!-- Meeting Insights -->
+                            <Border Background="#FFF3E0" BorderBrush="#FF9800" BorderThickness="1" CornerRadius="5">
+                                <StackPanel Margin="10">
+                                    <TextBlock Text="🔍 Meeting Insights" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                                    <TextBlock Text="{Binding MeetingInsights}" TextWrapping="Wrap" FontSize="11"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                    
+                    <!-- Action Items Tab Content -->
+                    <ScrollViewer Name="ActionItemsContent" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Text="Action Items" FontWeight="Bold" FontSize="14" Margin="0,0,0,10"/>
+                            <TextBox Text="{Binding ActionItems}" AcceptsReturn="True" Height="350" 
+                                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                                     TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                    
+                    <!-- Follow-ups Tab Content -->
+                    <ScrollViewer Name="FollowUpsContent" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Text="Follow-ups" FontWeight="Bold" FontSize="14" Margin="0,0,0,10"/>
+                            <TextBox Text="{Binding FollowUps}" AcceptsReturn="True" Height="350" 
+                                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                                     TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                    
+                    <!-- Questions Tab Content -->
+                    <ScrollViewer Name="QuestionsContent" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Text="Suggested Questions" FontWeight="Bold" FontSize="14" Margin="0,0,0,10"/>
+                            <TextBox Text="{Binding SuggestedQuestions}" AcceptsReturn="True" Height="350" 
+                                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                                     TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                    
+                    <!-- Raw Summary Tab Content -->
+                    <ScrollViewer Name="RawSummaryContent" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Text="Raw Summary" FontWeight="Bold" FontSize="14" Margin="0,0,0,10"/>
+                            <TextBox Text="{Binding MainSummary}" AcceptsReturn="True" Height="350" 
+                                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                                     TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </StackPanel>
         </Grid>
+        
+        <!-- Bottom Control Panel -->
         <StackPanel Orientation="Horizontal" Grid.Row="2" Margin="10">
             <Button Content="Export PDF" Command="{Binding ExportPdfCommand}" Margin="0,0,10,0"/>
             <Button Content="Clear Session" Command="{Binding ClearSessionCommand}"/>

@@ -5,6 +5,9 @@ using Amazon.BedrockRuntime.Model;
 using Microsoft.Extensions.Configuration;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Net.Http;
+using System.Text;
+using System.IO;
 
 namespace MeetingMind.Services
 {
@@ -90,6 +93,61 @@ Transcript:
             {
                 Console.WriteLine($"Error in BedrockService: {ex.Message}");
                 return $"Error generating summary: {ex.Message}";
+            }
+        }
+
+        public async Task<string> GenerateSuggestionsAsync(string prompt)
+        {
+            try
+            {
+                Console.WriteLine("🔄 BedrockService: Starting suggestion generation...");
+                
+                var requestBody = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    anthropic_version = "bedrock-2023-05-31",
+                    max_tokens = 1000,
+                    messages = new[]
+                    {
+                        new
+                        {
+                            role = "user",
+                            content = prompt
+                        }
+                    }
+                });
+
+                Console.WriteLine($"📝 BedrockService: Request body length: {requestBody.Length}");
+
+                var request = new InvokeModelRequest
+                {
+                    ModelId = _modelId,
+                    Body = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(requestBody))
+                };
+
+                Console.WriteLine("🔄 BedrockService: Calling AWS Bedrock...");
+                var response = await _client.InvokeModelAsync(request);
+                Console.WriteLine("✅ BedrockService: AWS response received");
+                
+                var responseBody = System.Text.Encoding.UTF8.GetString(response.Body.ToArray());
+                Console.WriteLine($"📄 BedrockService: Response body length: {responseBody.Length}");
+                
+                var responseDoc = JsonDocument.Parse(responseBody);
+                var content = responseDoc.RootElement.GetProperty("content");
+                
+                if (content.ValueKind == JsonValueKind.Array && content.GetArrayLength() > 0)
+                {
+                    var result = content[0].GetProperty("text").GetString() ?? "";
+                    Console.WriteLine($"✅ BedrockService: Generated suggestions: {result.Substring(0, Math.Min(100, result.Length))}...");
+                    return result;
+                }
+                
+                Console.WriteLine("❌ BedrockService: No content in response");
+                return "";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ BedrockService Error: {ex.Message}");
+                return "";
             }
         }
     }
