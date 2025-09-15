@@ -17,3 +17,5 @@
 /Meeting Mind/obj
 /.vs
 /Project1/SmartMeetingAssistant.Desktop/meetings.db
+/bin/Debug/net9.0-windows
+/obj
