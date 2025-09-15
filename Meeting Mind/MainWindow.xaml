@@ -328,11 +328,11 @@
             </Border>
         </Grid>
         
-        <!-- Debug Section (Hidden by default) -->
+        <!-- Debug Section (Visible for testing) -->
         <Border Grid.Row="3" 
                 Style="{StaticResource Card}" 
                 Margin="0,24,0,0"
-                Visibility="Collapsed">
+                Visibility="Visible">
             <StackPanel Orientation="Horizontal">
                 <Button Content="🧪 Test UI" 
                         Command="{Binding TestCommand}" 
@@ -340,6 +340,10 @@
                         Margin="0,0,12,0"/>
                 <Button Content="🔧 Test Chunk" 
                         Command="{Binding TestChunkCommand}" 
+                        Style="{StaticResource SecondaryButton}"
+                        Margin="0,0,12,0"/>
+                <Button Content="❓ Test Questions" 
+                        Command="{Binding TestQuestionsCommand}" 
                         Style="{StaticResource SecondaryButton}"/>
             </StackPanel>
         </Border>

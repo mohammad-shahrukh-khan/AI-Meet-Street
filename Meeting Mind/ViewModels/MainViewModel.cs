@@ -77,14 +77,14 @@ namespace MeetingMind.ViewModels
             set { _followUps = value; OnPropertyChanged(); }
         }
 
-        private string? _suggestedQuestions = string.Empty;
+        private string? _suggestedQuestions = "🎯 Start your meeting to get AI-powered question suggestions!";
         public string? SuggestedQuestions
         {
             get => _suggestedQuestions;
             set { _suggestedQuestions = value; OnPropertyChanged(); }
         }
 
-        private string? _meetingInsights = string.Empty;
+        private string? _meetingInsights = "🧠 AI insights will appear here as your meeting progresses...";
         public string? MeetingInsights
         {
             get => _meetingInsights;
@@ -422,7 +422,7 @@ namespace MeetingMind.ViewModels
                         LiveTranscript = $"🔴 Recording... Live transcription:\n\n{_liveTranscriptBuffer.Trim()}";
                     });
                     
-                    // Generate AI suggestions based on live transcript
+                    // Generate AI suggestions based on live transcript (more frequently)
                     _ = Task.Run(async () => await GenerateLiveSuggestionsAsync());
                     
                     Console.WriteLine($"Live transcript updated: {chunkTranscript}");
@@ -718,7 +718,7 @@ namespace MeetingMind.ViewModels
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(_liveTranscriptBuffer) || _liveTranscriptBuffer.Length < 50)
+                if (string.IsNullOrWhiteSpace(_liveTranscriptBuffer) || _liveTranscriptBuffer.Length < 30)
                 {
                     Console.WriteLine("Live transcript too short for AI suggestions");
                     return;
@@ -727,21 +727,27 @@ namespace MeetingMind.ViewModels
                 Console.WriteLine($"🤖 Generating live AI suggestions for transcript length: {_liveTranscriptBuffer.Length}");
                 Console.WriteLine($"📝 Transcript content: {_liveTranscriptBuffer.Substring(0, Math.Min(100, _liveTranscriptBuffer.Length))}...");
 
-                var prompt = $@"You are an AI meeting assistant. Based on this live meeting transcript, analyze the conversation and provide smart suggestions:
+                var prompt = $@"You are an intelligent AI meeting assistant. Analyze this live meeting transcript and provide smart, actionable suggestions. Be concise and specific.
 
-SUGGESTED QUESTIONS: Generate 2-3 specific, actionable questions that participants should ask for clarification, deeper understanding, or to move the discussion forward. Focus on:
-- Unclear points that need clarification
-- Missing details that should be discussed
-- Follow-up questions on important topics
-- Questions to ensure everyone is aligned
+SUGGESTED QUESTIONS:
+Generate 3-4 specific questions that would improve this meeting:
+- Ask for clarification on unclear points
+- Probe deeper into important topics
+- Ensure alignment among participants
+- Address potential concerns or gaps
+- Focus on actionable next steps
 
-MEETING INSIGHTS: Provide 1-2 key observations about:
-- Important decisions being made
-- Key topics being discussed
-- Potential issues or concerns
-- Action items that might be emerging
+MEETING INSIGHTS:
+Provide 2-3 key insights about:
+- Important decisions or agreements emerging
+- Potential risks or challenges identified
+- Key topics that need more discussion
+- Action items that are forming
+- Missing information that should be addressed
 
-Transcript: {_liveTranscriptBuffer.Trim()}";
+Format your response clearly with bullet points. Be specific and actionable.
+
+Current Meeting Transcript: {_liveTranscriptBuffer.Trim()}";
 
                 Console.WriteLine("🔄 Calling Bedrock service for AI suggestions...");
                 
@@ -788,25 +794,29 @@ Transcript: {_liveTranscriptBuffer.Trim()}";
 
                 Console.WriteLine($"Generating final AI suggestions for transcript length: {transcript.Length}");
 
-                var prompt = $@"You are an AI meeting assistant. Based on this meeting transcript, analyze the conversation and provide smart suggestions:
+                var prompt = $@"You are an expert AI meeting assistant. Analyze this complete meeting transcript and provide comprehensive, actionable suggestions:
 
-SUGGESTED QUESTIONS: Generate 3-5 specific, actionable questions that participants should ask for clarification, deeper understanding, or to move the discussion forward. Focus on:
-- Unclear points that need clarification
-- Missing details that should be discussed
-- Follow-up questions on important topics
-- Questions to ensure everyone is aligned
-- Questions about implementation details
-- Questions about timelines and priorities
+SUGGESTED QUESTIONS:
+Generate 4-6 strategic questions that would add value to this meeting:
+- Clarify any ambiguous points or decisions
+- Probe deeper into critical topics
+- Address potential risks or challenges
+- Ensure all stakeholders are aligned
+- Focus on implementation and next steps
+- Identify missing information or perspectives
 
-MEETING INSIGHTS: Provide 2-3 key observations about:
-- Important decisions being made
-- Key topics being discussed
-- Potential issues or concerns
-- Action items that might be emerging
-- Risks or challenges identified
-- Next steps that should be taken
+MEETING INSIGHTS:
+Provide 3-4 key insights and observations:
+- Important decisions and agreements made
+- Critical action items and responsibilities
+- Potential risks, challenges, or concerns
+- Key topics that need follow-up
+- Patterns or trends in the discussion
+- Strategic implications and next steps
 
-Transcript: {transcript.Trim()}";
+Format with clear bullet points. Be specific, actionable, and valuable.
+
+Meeting Transcript: {transcript.Trim()}";
 
                 var suggestions = await _bedrockService.GenerateSuggestionsAsync(prompt);
                 Console.WriteLine($"Final AI suggestions received: {suggestions?.Length ?? 0} characters");
@@ -838,59 +848,95 @@ Transcript: {transcript.Trim()}";
         {
             try
             {
+                Console.WriteLine($"🔍 Parsing AI suggestions: {suggestions.Substring(0, Math.Min(200, suggestions.Length))}...");
+                
                 var lines = suggestions.Split('\n', StringSplitOptions.RemoveEmptyEntries);
                 var questions = new List<string>();
                 var insights = new List<string>();
+                var currentSection = "";
 
                 foreach (var line in lines)
                 {
                     var trimmedLine = line.Trim();
-                    if (trimmedLine.StartsWith("SUGGESTED QUESTIONS:", StringComparison.OrdinalIgnoreCase) ||
-                        trimmedLine.StartsWith("QUESTIONS:", StringComparison.OrdinalIgnoreCase))
+                    
+                    // Detect section headers
+                    if (trimmedLine.ToUpper().Contains("SUGGESTED QUESTIONS") || trimmedLine.ToUpper().Contains("QUESTIONS:"))
                     {
-                        // Extract questions
-                        var questionText = trimmedLine.Substring(trimmedLine.IndexOf(':') + 1).Trim();
-                        if (!string.IsNullOrWhiteSpace(questionText))
-                            questions.Add(questionText);
+                        currentSection = "questions";
+                        continue;
                     }
-                    else if (trimmedLine.StartsWith("MEETING INSIGHTS:", StringComparison.OrdinalIgnoreCase) ||
-                             trimmedLine.StartsWith("INSIGHTS:", StringComparison.OrdinalIgnoreCase))
+                    else if (trimmedLine.ToUpper().Contains("MEETING INSIGHTS") || trimmedLine.ToUpper().Contains("INSIGHTS:"))
                     {
-                        // Extract insights
-                        var insightText = trimmedLine.Substring(trimmedLine.IndexOf(':') + 1).Trim();
-                        if (!string.IsNullOrWhiteSpace(insightText))
-                            insights.Add(insightText);
+                        currentSection = "insights";
+                        continue;
                     }
-                    else if (trimmedLine.StartsWith("CLARIFICATIONS:", StringComparison.OrdinalIgnoreCase))
+                    
+                    // Parse bullet points and content
+                    if (trimmedLine.Length > 5 && (trimmedLine.StartsWith("-") || trimmedLine.StartsWith("•") || trimmedLine.StartsWith("*") || trimmedLine.StartsWith("1.") || trimmedLine.StartsWith("2.") || trimmedLine.StartsWith("3.") || trimmedLine.StartsWith("4.")))
                     {
-                        // Add clarifications to questions
-                        var clarificationText = trimmedLine.Substring(trimmedLine.IndexOf(':') + 1).Trim();
-                        if (!string.IsNullOrWhiteSpace(clarificationText))
-                            questions.Add(clarificationText);
-                    }
-                    else if (trimmedLine.Length > 10 && (trimmedLine.StartsWith("-") || trimmedLine.StartsWith("•") || trimmedLine.StartsWith("*")))
-                    {
-                        // Handle bullet points
-                        var cleanText = trimmedLine.Substring(1).Trim();
+                        var cleanText = trimmedLine;
+                        // Remove bullet point markers
+                        if (trimmedLine.StartsWith("-") || trimmedLine.StartsWith("•") || trimmedLine.StartsWith("*"))
+                            cleanText = trimmedLine.Substring(1).Trim();
+                        else if (char.IsDigit(trimmedLine[0]))
+                            cleanText = trimmedLine.Substring(trimmedLine.IndexOf('.') + 1).Trim();
+                        
                         if (cleanText.Length > 10)
                         {
-                            if (cleanText.ToLower().Contains("question") || cleanText.ToLower().Contains("ask"))
-                                questions.Add(cleanText);
+                            if (currentSection == "questions")
+                            {
+                                questions.Add("❓ " + cleanText);
+                            }
+                            else if (currentSection == "insights")
+                            {
+                                insights.Add("💡 " + cleanText);
+                            }
                             else
-                                insights.Add(cleanText);
+                            {
+                                // Auto-categorize based on content
+                                if (cleanText.Contains("?") || cleanText.ToLower().Contains("ask") || cleanText.ToLower().Contains("clarify"))
+                                    questions.Add("❓ " + cleanText);
+                                else
+                                    insights.Add("💡 " + cleanText);
+                            }
                         }
+                    }
+                    else if (trimmedLine.Length > 20 && !trimmedLine.ToUpper().Contains("SUGGESTED") && !trimmedLine.ToUpper().Contains("INSIGHTS"))
+                    {
+                        // Handle non-bullet point content
+                        if (currentSection == "questions")
+                            questions.Add("❓ " + trimmedLine);
+                        else if (currentSection == "insights")
+                            insights.Add("💡 " + trimmedLine);
                     }
                 }
 
-                // Update UI
-                SuggestedQuestions = questions.Count > 0 ? string.Join("\n", questions) : "No specific questions suggested yet. Keep the discussion going!";
-                MeetingInsights = insights.Count > 0 ? string.Join("\n", insights) : "Listening for insights...";
+                // Update UI with enhanced formatting
+                if (questions.Count > 0)
+                {
+                    SuggestedQuestions = string.Join("\n\n", questions);
+                    Console.WriteLine($"✅ Updated {questions.Count} suggested questions");
+                }
+                else
+                {
+                    SuggestedQuestions = "🤔 Keep the conversation going! AI will suggest questions as the discussion develops...";
+                }
+
+                if (insights.Count > 0)
+                {
+                    MeetingInsights = string.Join("\n\n", insights);
+                    Console.WriteLine($"✅ Updated {insights.Count} meeting insights");
+                }
+                else
+                {
+                    MeetingInsights = "👂 Listening for key insights and patterns in your meeting...";
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error parsing live suggestions: {ex.Message}");
-                SuggestedQuestions = "Error generating suggestions";
-                MeetingInsights = "Error generating insights";
+                Console.WriteLine($"❌ Error parsing live suggestions: {ex.Message}");
+                SuggestedQuestions = "⚠️ Error generating suggestions - please continue your meeting";
+                MeetingInsights = "⚠️ Error generating insights - AI will retry automatically";
             }
         }
 
