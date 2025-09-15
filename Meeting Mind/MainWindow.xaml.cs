@@ -26,16 +26,11 @@ public partial class MainWindow : Window
         if (sender is Button clickedButton)
         {
             // Reset all tab buttons to inactive state
-            SummaryTab.Background = System.Windows.Media.Brushes.LightGray;
-            SummaryTab.BorderBrush = System.Windows.Media.Brushes.Gray;
-            ActionItemsTab.Background = System.Windows.Media.Brushes.LightGray;
-            ActionItemsTab.BorderBrush = System.Windows.Media.Brushes.Gray;
-            FollowUpsTab.Background = System.Windows.Media.Brushes.LightGray;
-            FollowUpsTab.BorderBrush = System.Windows.Media.Brushes.Gray;
-            QuestionsTab.Background = System.Windows.Media.Brushes.LightGray;
-            QuestionsTab.BorderBrush = System.Windows.Media.Brushes.Gray;
-            RawSummaryTab.Background = System.Windows.Media.Brushes.LightGray;
-            RawSummaryTab.BorderBrush = System.Windows.Media.Brushes.Gray;
+            SummaryTab.Style = (Style)FindResource("TabButton");
+            ActionItemsTab.Style = (Style)FindResource("TabButton");
+            FollowUpsTab.Style = (Style)FindResource("TabButton");
+            QuestionsTab.Style = (Style)FindResource("TabButton");
+            RawSummaryTab.Style = (Style)FindResource("TabButton");
 
             // Hide all tab content
             SummaryContent.Visibility = Visibility.Collapsed;
@@ -48,28 +43,23 @@ public partial class MainWindow : Window
             switch (clickedButton.Name)
             {
                 case "SummaryTab":
-                    clickedButton.Background = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#E3F2FD"));
-                    clickedButton.BorderBrush = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2196F3"));
+                    clickedButton.Style = (Style)FindResource("ActiveTabButton");
                     SummaryContent.Visibility = Visibility.Visible;
                     break;
                 case "ActionItemsTab":
-                    clickedButton.Background = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#E3F2FD"));
-                    clickedButton.BorderBrush = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2196F3"));
+                    clickedButton.Style = (Style)FindResource("ActiveTabButton");
                     ActionItemsContent.Visibility = Visibility.Visible;
                     break;
                 case "FollowUpsTab":
-                    clickedButton.Background = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#E3F2FD"));
-                    clickedButton.BorderBrush = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2196F3"));
+                    clickedButton.Style = (Style)FindResource("ActiveTabButton");
                     FollowUpsContent.Visibility = Visibility.Visible;
                     break;
                 case "QuestionsTab":
-                    clickedButton.Background = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#E3F2FD"));
-                    clickedButton.BorderBrush = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2196F3"));
+                    clickedButton.Style = (Style)FindResource("ActiveTabButton");
                     QuestionsContent.Visibility = Visibility.Visible;
                     break;
                 case "RawSummaryTab":
-                    clickedButton.Background = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#E3F2FD"));
-                    clickedButton.BorderBrush = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2196F3"));
+                    clickedButton.Style = (Style)FindResource("ActiveTabButton");
                     RawSummaryContent.Visibility = Visibility.Visible;
                     break;
             }

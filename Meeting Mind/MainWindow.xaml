@@ -6,143 +6,342 @@
         xmlns:local="clr-namespace:MeetingMind.Converters"
         xmlns:vm="clr-namespace:MeetingMind.ViewModels"
         mc:Ignorable="d"
-        Title="MeetingMind" Height="700" Width="1200">
+        Title="Meeting Mind - AI-Powered Meeting Assistant" 
+        Height="800" Width="1400"
+        Background="{StaticResource BackgroundBrush}"
+        WindowStartupLocation="CenterScreen">
     <Window.DataContext>
         <vm:MainViewModel/>
     </Window.DataContext>
     <Window.Resources>
         <local:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        
+        <!-- Recording Status Indicator Style -->
+        <Style x:Key="RecordingIndicator" TargetType="Ellipse">
+            <Setter Property="Width" Value="12"/>
+            <Setter Property="Height" Value="12"/>
+            <Setter Property="Fill" Value="{StaticResource DangerBrush}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsRecording}" Value="True">
+                    <DataTrigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard RepeatBehavior="Forever">
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity" 
+                                               From="1" To="0.3" Duration="0:0:0.8" 
+                                               AutoReverse="True"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.EnterActions>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
-    <Grid>
+    
+    <Grid Margin="24">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         
-        <!-- Top Control Panel -->
-        <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="10">
-            <Button Content="Test UI" Command="{Binding TestCommand}" Margin="0,0,10,0" Background="LightBlue"/>
-            <Button Content="Test Chunk" Command="{Binding TestChunkCommand}" Margin="0,0,10,0" Background="LightGreen"/>
-            <Button Content="Start Recording" Command="{Binding StartRecordingCommand}" Margin="0,0,10,0"/>
-            <Button Content="Stop Recording" Command="{Binding StopRecordingCommand}" Margin="0,0,10,0"/>
-            <ProgressBar Width="150" Height="20" IsIndeterminate="True" Visibility="{Binding IsProcessing, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-        </StackPanel>
+        <!-- Header Section -->
+        <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,24">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <!-- Title and Status -->
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                    <TextBlock Text="Meeting Mind" Style="{StaticResource HeaderText}"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <Ellipse Style="{StaticResource RecordingIndicator}" 
+                                 Visibility="{Binding IsRecording, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                 Margin="0,0,8,0" VerticalAlignment="Center"/>
+                        <TextBlock VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource BodyText}">
+                                    <Setter Property="Text" Value="⚪ Ready to record"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsRecording}" Value="True">
+                                            <Setter Property="Text" Value="🔴 Recording in progress..."/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                </StackPanel>
+                
+                <!-- Action Buttons -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="🎙️ Start Recording" 
+                            Command="{Binding StartRecordingCommand}" 
+                            Style="{StaticResource SuccessButton}"
+                            Margin="0,0,12,0"
+                            Visibility="{Binding IsNotRecording, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    <Button Content="⏹️ Stop Recording" 
+                            Command="{Binding StopRecordingCommand}" 
+                            Style="{StaticResource DangerButton}"
+                            Margin="0,0,12,0"
+                            Visibility="{Binding IsRecording, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    <Button Content="📄 Export PDF" 
+                            Command="{Binding ExportPdfCommand}" 
+                            Style="{StaticResource SecondaryButton}"
+                            Margin="0,0,12,0"/>
+                    <Button Content="🗑️ Clear Session" 
+                            Command="{Binding ClearSessionCommand}" 
+                            Style="{StaticResource SecondaryButton}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+        
+        <!-- Processing Indicator -->
+        <Border Grid.Row="1" 
+                Background="{StaticResource PrimaryBrush}" 
+                CornerRadius="4" 
+                Padding="16,12" 
+                Margin="0,0,0,24"
+                Visibility="{Binding IsProcessing, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <StackPanel Orientation="Horizontal">
+                <ProgressBar IsIndeterminate="True" 
+                             Width="200" 
+                             Height="4" 
+                             Background="Transparent"
+                             Foreground="{StaticResource TextOnPrimaryBrush}"
+                             Margin="0,0,16,0"
+                             VerticalAlignment="Center"/>
+                <TextBlock Text="Processing your meeting..." 
+                           Foreground="{StaticResource TextOnPrimaryBrush}"
+                           FontFamily="{StaticResource PrimaryFont}"
+                           FontWeight="Medium"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+        </Border>
         
         <!-- Main Content Area -->
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="24"/>
                 <ColumnDefinition Width="3*"/>
             </Grid.ColumnDefinitions>
             
             <!-- Left Panel: Live Transcript -->
-            <StackPanel Grid.Column="0" Margin="10">
-                <TextBlock Text="Live Transcript" FontWeight="Bold" FontSize="14"/>
-                <TextBox Text="{Binding LiveTranscript}" AcceptsReturn="True" Height="500" 
-                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                         TextWrapping="Wrap"/>
-            </StackPanel>
-            
-            <!-- Right Panel: Tabbed Interface -->
-            <StackPanel Grid.Column="1" Margin="10">
-                <!-- Tab Headers -->
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                    <Button Content="Summary" Name="SummaryTab" Click="TabButton_Click" 
-                            Background="#E3F2FD" BorderBrush="#2196F3" BorderThickness="1" 
-                            Margin="0,0,5,0" Padding="10,5"/>
-                    <Button Content="Action Items" Name="ActionItemsTab" Click="TabButton_Click" 
-                            Background="LightGray" BorderBrush="Gray" BorderThickness="1" 
-                            Margin="0,0,5,0" Padding="10,5"/>
-                    <Button Content="Follow-ups" Name="FollowUpsTab" Click="TabButton_Click" 
-                            Background="LightGray" BorderBrush="Gray" BorderThickness="1" 
-                            Margin="0,0,5,0" Padding="10,5"/>
-                    <Button Content="Questions" Name="QuestionsTab" Click="TabButton_Click" 
-                            Background="LightGray" BorderBrush="Gray" BorderThickness="1" 
-                            Margin="0,0,5,0" Padding="10,5"/>
-                    <Button Content="Raw Summary" Name="RawSummaryTab" Click="TabButton_Click" 
-                            Background="LightGray" BorderBrush="Gray" BorderThickness="1" 
-                            Padding="10,5"/>
-                </StackPanel>
-                
-                <!-- Tab Content -->
-                <Grid Height="400">
-                    <!-- Summary Tab Content -->
-                    <ScrollViewer Name="SummaryContent" Visibility="Visible" VerticalScrollBarVisibility="Auto">
-                        <StackPanel>
-                            <TextBlock Text="AI Summary" FontWeight="Bold" FontSize="14" Margin="0,0,0,10"/>
-                            <TextBox Text="{Binding SummaryText}" AcceptsReturn="True" Height="150" 
-                                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                                     TextWrapping="Wrap" Margin="0,0,0,20"/>
-                            
-                            <!-- Live AI Suggestions Section -->
-                            <TextBlock Text="Live AI Suggestions" FontWeight="Bold" FontSize="14" Margin="0,0,0,5"/>
-                            
-                            <!-- Suggested Questions -->
-                            <Border Background="#E3F2FD" BorderBrush="#2196F3" BorderThickness="1" CornerRadius="5" Margin="0,0,0,10">
-                                <StackPanel Margin="10">
-                                    <TextBlock Text="💡 Suggested Questions" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
-                                    <TextBlock Text="{Binding SuggestedQuestions}" TextWrapping="Wrap" FontSize="11"/>
-                                </StackPanel>
-                            </Border>
-                            
-                            <!-- Meeting Insights -->
-                            <Border Background="#FFF3E0" BorderBrush="#FF9800" BorderThickness="1" CornerRadius="5">
-                                <StackPanel Margin="10">
-                                    <TextBlock Text="🔍 Meeting Insights" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
-                                    <TextBlock Text="{Binding MeetingInsights}" TextWrapping="Wrap" FontSize="11"/>
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-                    </ScrollViewer>
+            <Border Grid.Column="0" Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
                     
-                    <!-- Action Items Tab Content -->
-                    <ScrollViewer Name="ActionItemsContent" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
-                        <StackPanel>
-                            <TextBlock Text="Action Items" FontWeight="Bold" FontSize="14" Margin="0,0,0,10"/>
-                            <TextBox Text="{Binding ActionItems}" AcceptsReturn="True" Height="350" 
-                                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                                     TextWrapping="Wrap"/>
-                        </StackPanel>
-                    </ScrollViewer>
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,16">
+                        <TextBlock Text="📝" FontSize="20" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="Live Transcript" Style="{StaticResource SubheaderText}" VerticalAlignment="Center"/>
+                    </StackPanel>
                     
-                    <!-- Follow-ups Tab Content -->
-                    <ScrollViewer Name="FollowUpsContent" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
-                        <StackPanel>
-                            <TextBlock Text="Follow-ups" FontWeight="Bold" FontSize="14" Margin="0,0,0,10"/>
-                            <TextBox Text="{Binding FollowUps}" AcceptsReturn="True" Height="350" 
-                                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                                     TextWrapping="Wrap"/>
-                        </StackPanel>
-                    </ScrollViewer>
-                    
-                    <!-- Questions Tab Content -->
-                    <ScrollViewer Name="QuestionsContent" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
-                        <StackPanel>
-                            <TextBlock Text="Suggested Questions" FontWeight="Bold" FontSize="14" Margin="0,0,0,10"/>
-                            <TextBox Text="{Binding SuggestedQuestions}" AcceptsReturn="True" Height="350" 
-                                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                                     TextWrapping="Wrap"/>
-                        </StackPanel>
-                    </ScrollViewer>
-                    
-                    <!-- Raw Summary Tab Content -->
-                    <ScrollViewer Name="RawSummaryContent" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
-                        <StackPanel>
-                            <TextBlock Text="Raw Summary" FontWeight="Bold" FontSize="14" Margin="0,0,0,10"/>
-                            <TextBox Text="{Binding MainSummary}" AcceptsReturn="True" Height="350" 
-                                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                                     TextWrapping="Wrap"/>
-                        </StackPanel>
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <TextBox Text="{Binding LiveTranscript}" 
+                                 Style="{StaticResource ModernTextBox}"
+                                 AcceptsReturn="True" 
+                                 TextWrapping="Wrap"
+                                 BorderThickness="0"
+                                 Background="Transparent"
+                                 IsReadOnly="True"
+                                 FontFamily="{StaticResource PrimaryFont}"
+                                 FontSize="14"/>
                     </ScrollViewer>
                 </Grid>
-            </StackPanel>
+            </Border>
+            
+            <!-- Right Panel: Analysis -->
+            <Border Grid.Column="2" Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <!-- Header -->
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,20">
+                        <TextBlock Text="🤖" FontSize="20" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="AI Analysis" Style="{StaticResource SubheaderText}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    
+                    <!-- Tab Navigation -->
+                    <Border Grid.Row="1" 
+                            BorderBrush="{StaticResource BorderBrush}" 
+                            BorderThickness="0,0,0,1" 
+                            Margin="0,0,0,20">
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="📋 Summary" 
+                                    Name="SummaryTab" 
+                                    Click="TabButton_Click" 
+                                    Style="{StaticResource ActiveTabButton}"/>
+                            <Button Content="✅ Action Items" 
+                                    Name="ActionItemsTab" 
+                                    Click="TabButton_Click" 
+                                    Style="{StaticResource TabButton}"/>
+                            <Button Content="🔄 Follow-ups" 
+                                    Name="FollowUpsTab" 
+                                    Click="TabButton_Click" 
+                                    Style="{StaticResource TabButton}"/>
+                            <Button Content="❓ Questions" 
+                                    Name="QuestionsTab" 
+                                    Click="TabButton_Click" 
+                                    Style="{StaticResource TabButton}"/>
+                            <Button Content="📄 Raw Summary" 
+                                    Name="RawSummaryTab" 
+                                    Click="TabButton_Click" 
+                                    Style="{StaticResource TabButton}"/>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Tab Content -->
+                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <Grid>
+                            <!-- Summary Tab Content -->
+                            <StackPanel Name="SummaryContent" Visibility="Visible">
+                                <!-- AI Summary -->
+                                <Border Background="{StaticResource BorderLightBrush}" 
+                                        CornerRadius="6" 
+                                        Padding="16" 
+                                        Margin="0,0,0,20">
+                                    <StackPanel>
+                                        <TextBlock Text="📝 Meeting Summary" 
+                                                   Style="{StaticResource SubheaderText}" 
+                                                   Margin="0,0,0,12"/>
+                                        <TextBox Text="{Binding SummaryText}" 
+                                                 Style="{StaticResource ModernTextBox}"
+                                                 AcceptsReturn="True" 
+                                                 TextWrapping="Wrap"
+                                                 BorderThickness="0"
+                                                 Background="Transparent"
+                                                 IsReadOnly="True"
+                                                 MinHeight="120"/>
+                                    </StackPanel>
+                                </Border>
+                                
+                                <!-- Live AI Suggestions -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="16"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <!-- Suggested Questions -->
+                                    <Border Grid.Column="0" 
+                                            Background="{StaticResource SurfaceBrush}" 
+                                            BorderBrush="{StaticResource PrimaryBrush}" 
+                                            BorderThickness="1" 
+                                            CornerRadius="6" 
+                                            Padding="16">
+                                        <StackPanel>
+                                            <TextBlock Text="💡 Suggested Questions" 
+                                                       Style="{StaticResource SubheaderText}" 
+                                                       Foreground="{StaticResource PrimaryBrush}"
+                                                       Margin="0,0,0,12"/>
+                                            <TextBox Text="{Binding SuggestedQuestions}" 
+                                                     Style="{StaticResource ModernTextBox}"
+                                                     TextWrapping="Wrap" 
+                                                     BorderThickness="0"
+                                                     Background="Transparent"
+                                                     IsReadOnly="True"
+                                                     MinHeight="100"/>
+                                        </StackPanel>
+                                    </Border>
+                                    
+                                    <!-- Meeting Insights -->
+                                    <Border Grid.Column="2" 
+                                            Background="{StaticResource SurfaceBrush}" 
+                                            BorderBrush="{StaticResource AccentBrush}" 
+                                            BorderThickness="1" 
+                                            CornerRadius="6" 
+                                            Padding="16">
+                                        <StackPanel>
+                                            <TextBlock Text="🔍 Meeting Insights" 
+                                                       Style="{StaticResource SubheaderText}" 
+                                                       Foreground="{StaticResource AccentBrush}"
+                                                       Margin="0,0,0,12"/>
+                                            <TextBox Text="{Binding MeetingInsights}" 
+                                                     Style="{StaticResource ModernTextBox}"
+                                                     TextWrapping="Wrap" 
+                                                     BorderThickness="0"
+                                                     Background="Transparent"
+                                                     IsReadOnly="True"
+                                                     MinHeight="100"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                            </StackPanel>
+                            
+                            <!-- Action Items Tab Content -->
+                            <StackPanel Name="ActionItemsContent" Visibility="Collapsed">
+                                <TextBlock Text="✅ Action Items" Style="{StaticResource SubheaderText}" Margin="0,0,0,16"/>
+                                <TextBox Text="{Binding ActionItems}" 
+                                         Style="{StaticResource ModernTextBox}"
+                                         AcceptsReturn="True" 
+                                         TextWrapping="Wrap"
+                                         MinHeight="400"
+                                         IsReadOnly="True"/>
+                            </StackPanel>
+                            
+                            <!-- Follow-ups Tab Content -->
+                            <StackPanel Name="FollowUpsContent" Visibility="Collapsed">
+                                <TextBlock Text="🔄 Follow-ups" Style="{StaticResource SubheaderText}" Margin="0,0,0,16"/>
+                                <TextBox Text="{Binding FollowUps}" 
+                                         Style="{StaticResource ModernTextBox}"
+                                         AcceptsReturn="True" 
+                                         TextWrapping="Wrap"
+                                         MinHeight="400"
+                                         IsReadOnly="True"/>
+                            </StackPanel>
+                            
+                            <!-- Questions Tab Content -->
+                            <StackPanel Name="QuestionsContent" Visibility="Collapsed">
+                                <TextBlock Text="❓ Suggested Questions" Style="{StaticResource SubheaderText}" Margin="0,0,0,16"/>
+                                <TextBox Text="{Binding SuggestedQuestions}" 
+                                         Style="{StaticResource ModernTextBox}"
+                                         AcceptsReturn="True" 
+                                         TextWrapping="Wrap"
+                                         MinHeight="400"
+                                         IsReadOnly="True"/>
+                            </StackPanel>
+                            
+                            <!-- Raw Summary Tab Content -->
+                            <StackPanel Name="RawSummaryContent" Visibility="Collapsed">
+                                <TextBlock Text="📄 Raw Summary" Style="{StaticResource SubheaderText}" Margin="0,0,0,16"/>
+                                <TextBox Text="{Binding MainSummary}" 
+                                         Style="{StaticResource ModernTextBox}"
+                                         AcceptsReturn="True" 
+                                         TextWrapping="Wrap"
+                                         MinHeight="400"
+                                         IsReadOnly="True"/>
+                            </StackPanel>
+                        </Grid>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
         </Grid>
         
-        <!-- Bottom Control Panel -->
-        <StackPanel Orientation="Horizontal" Grid.Row="2" Margin="10">
-            <Button Content="Export PDF" Command="{Binding ExportPdfCommand}" Margin="0,0,10,0"/>
-            <Button Content="Clear Session" Command="{Binding ClearSessionCommand}"/>
-        </StackPanel>
+        <!-- Debug Section (Hidden by default) -->
+        <Border Grid.Row="3" 
+                Style="{StaticResource Card}" 
+                Margin="0,24,0,0"
+                Visibility="Collapsed">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="🧪 Test UI" 
+                        Command="{Binding TestCommand}" 
+                        Style="{StaticResource SecondaryButton}"
+                        Margin="0,0,12,0"/>
+                <Button Content="🔧 Test Chunk" 
+                        Command="{Binding TestChunkCommand}" 
+                        Style="{StaticResource SecondaryButton}"/>
+            </StackPanel>
+        </Border>
     </Grid>
 </Window>

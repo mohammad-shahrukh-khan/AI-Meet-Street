@@ -18,4 +18,23 @@ namespace MeetingMind.Converters
             return (value is Visibility v && v == Visibility.Visible);
         }
     }
+
+    public class BooleanToStatusConverter : IValueConverter
+    {
+        public static readonly BooleanToStatusConverter Instance = new();
+
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool isRecording)
+            {
+                return isRecording ? "🔴 Recording in progress..." : "⚪ Ready to record";
+            }
+            return "Ready";
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
 }
